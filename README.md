@@ -6,6 +6,8 @@ TODO:
 
 Pentru a rula aplicatia avem nevoie ca Haskell si stack sa fie instalate pe calculator. Putem face acest lucru urmand pasii de [aici](https://docs.haskellstack.org/en/stable/).
 
+Pentru a putea acesa reteaua TOR avem nevoie de [Tor Browser](https://www.torproject.org/download/) sa fie pornit pentru a avea procesul tor activ pe portul '9150'.
+
 Applicatia are urmatoarele setari
 ```
 λ stack exec -- TorScraper --help
