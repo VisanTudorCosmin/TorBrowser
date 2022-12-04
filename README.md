@@ -4,7 +4,7 @@ TODO:
 - [ ] extragerea metadatelor
 - [ ] crearea unei diagrame pentru vizualizareea legaturilor dintre domenii
 
-Pentru a rula aplicatia avem nevoie ca Haskell si stack sa fie instalate pe calculator. Putem face acest lucru urmand pasi de [aici](https://docs.haskellstack.org/en/stable/).
+Pentru a rula aplicatia avem nevoie ca Haskell si stack sa fie instalate pe calculator. Putem face acest lucru urmand pasii de [aici](https://docs.haskellstack.org/en/stable/).
 
 Applicatia are urmatoarele setari
 ```
@@ -33,7 +33,7 @@ Deleting all pages not scraped from database
 [Debug#SQL] SELECT "id","from","to","scraped","timestamp" FROM "page" WHERE "to"=?; [PersistText "http://c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion/"]
 ```
 
-Aplicatia va extrage toate link-urile din pagina data. Urmand ca pentru fiecare link sa fie facuti recursiv aceasi pasi.
+Aplicatia va extrage toate link-urile din pagina data. Urmand ca fiecare link extras sa devina seed.
 
 Dupa ce am adunat destule date, pentru a vedea de cate ori domeniul A a avut referinte catre domeniul B folosim comanda
 ```
