@@ -13,6 +13,8 @@
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE FlexibleInstances #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TransformListComp #-}
+{-# LANGUAGE DeriveGeneric #-}
 module Main (main) where
 
 import Network.Socket
@@ -27,11 +29,19 @@ import Database.Persist.Sqlite
 import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Logger (runStderrLoggingT)
 import Control.Monad.IO.Class (liftIO)
-import Data.List (group, sort, isInfixOf)
+import Data.List (sort, isInfixOf)
+import qualified Data.List as L
 import Control.Arrow ((&&&))
+import GHC.Exts
+import Data.Function (on)
+import Data.Aeson hiding (Options)
+import GHC.Generics
 
 import System.Command
 import System.Exit
+import System.IO.Unsafe
+import System.Random
+import System.Random.Stateful
 
 import Control.Applicative
 import Options hiding (group)
@@ -56,6 +66,27 @@ Page
     timestamp UTCTime
     UniquePage to
 |]
+
+data Node = Node {
+    name :: String,
+    group :: Int
+} deriving (Generic, Show)
+
+data Link = Link {
+    source :: Int,
+    target :: Int,
+    value :: Int
+} deriving (Generic, Show)
+
+data JsonResponse = JsonResponse {
+    nodes :: [Node],
+    links :: [Link]
+} deriving (Generic, Show)
+
+instance ToJSON JsonResponse
+instance ToJSON Node
+instance ToJSON Link
+
 
 getBody :: String -> IO Stdout
 getBody url = cmd $ "curl --socks5-hostname localhost:9150 " <> url
@@ -95,7 +126,19 @@ pagesPairs (Entity _ Page{..}) = do
     return (fromHost, toHost)
 
 countOccurences :: Ord a => [a] -> [(a, Int)]
-countOccurences = map (head &&& length) . group . sort
+countOccurences = map (head &&& length) . L.group . sort
+
+getIndexWith :: [String] -> String -> Int
+getIndexWith list el = maybe 0 id $ L.findIndex (el ==) list
+
+-- process :: [(String, String)] -> [(String, [String])]
+-- process list = [(the a, b) |  let info = [ (x, y) | (x, y) <- list, then sortWith by y ], (a, b) <- info, then group by a using groupWith]
+
+-- toJson :: [(String, String)] -> [(String,[String])]
+-- toJson pairs = groupBy (\(a,b) (x,y) -> a == b) pairs
+
+rndInt :: IO Int
+rndInt = randomRIO (1, 6)
 
 main :: IO ()
 main = runStderrLoggingT $ withSqlitePool "data.db3" 10 $ \pool -> liftIO $ do
@@ -108,6 +151,11 @@ main = runStderrLoggingT $ withSqlitePool "data.db3" 10 $ \pool -> liftIO $ do
             scrapedPages <- flip runSqlPool pool $ selectList [ PageScraped ==. True ] []
             let result = countOccurences $ mapMaybe pagesPairs scrapedPages
                 exportContent = unlines $ fmap (\((from,to),count)-> from <> "," <> to <> "," <> (show count)) result
+                jsonExport = fmap (\((from,to),count)-> (from, to)) result
+                names = (L.nub (fmap fst jsonExport ++ fmap snd jsonExport))
+                nodes = fmap (\n -> Node n (unsafePerformIO rndInt)) names 
+                links = fmap (\(from,to) -> Link (getIndexWith names from) (getIndexWith names to) (unsafePerformIO rndInt)) jsonExport
+            encodeFile "graph/result.json" (JsonResponse nodes links)
             writeFile "data.csv" exportContent
 
 
@@ -124,9 +172,10 @@ main = runStderrLoggingT $ withSqlitePool "data.db3" 10 $ \pool -> liftIO $ do
                 case maybePage of 
                     Nothing -> exitSuccess
                     (Just (Entity pageId Page{..})) -> do
+                        flip runSqlPool pool $ update pageId [ PageScraped =. True ]
                         now <- getCurrentTime 
                         putStrLn pageTo
                         hrefs <- getPageDetails pageTo
-                        flip runSqlPool pool $ update pageId [ PageScraped =. True ]
+                        -- flip runSqlPool pool $ update pageId [ PageScraped =. True ]
                         forM_ hrefs $ \href -> do 
                             flip runSqlPool pool $ insertUnique $ Page pageTo href False now

@@ -31,7 +31,9 @@ executable TorScraper
                        persistent-sqlite ,
                        options ,
                        time ,
-                       command
+                       command ,
+                       aeson ,
+                       random
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities

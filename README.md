@@ -46,3 +46,8 @@ Acceasta comanda va crea un fiser data.csv care contine pe fiecare linie trei va
 ```
 c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,23
 ```
+
+Va ma fi create si un fiser result.json care contine un obiect json cu doua campuri 'nodes' si 'links'. Campul 'nodes' reprezinta lista cu toate adresele onion care au fost gasite. Campul 'links' reprezinta lista cu toate relatiile dintre aceste adrese. Acesta obiect json este folosit pentru a afisa o diagrama pentru a vizualiza aceste relatii. 
+
+Exemplu de diagrama afisata:
+![Alt text](graph.png?raw=true "Title")
