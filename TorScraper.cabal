@@ -33,7 +33,9 @@ executable TorScraper
                        time ,
                        command ,
                        aeson ,
-                       random
+                       random ,
+                       aeson-pretty ,
+                       bytestring
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities

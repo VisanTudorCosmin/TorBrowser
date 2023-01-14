@@ -30,18 +30,22 @@ import Control.Monad.Trans.Resource (runResourceT)
 import Control.Monad.Logger (runStderrLoggingT)
 import Control.Monad.IO.Class (liftIO)
 import Data.List (sort, isInfixOf)
+import Data.Aeson.Encode.Pretty
 import qualified Data.List as L
 import Control.Arrow ((&&&))
 import GHC.Exts
 import Data.Function (on)
 import Data.Aeson hiding (Options)
 import GHC.Generics
+import qualified Data.ByteString.Lazy as BL
+import Data.Char
 
 import System.Command
 import System.Exit
 import System.IO.Unsafe
 import System.Random
 import System.Random.Stateful
+import Control.Exception
 
 import Control.Applicative
 import Options hiding (group)
@@ -65,6 +69,11 @@ Page
     scraped Bool
     timestamp UTCTime
     UniquePage to
+PageInfo 
+    addr String
+    title String
+    keywords String
+    deriving Generic
 |]
 
 data Node = Node {
@@ -86,13 +95,29 @@ data JsonResponse = JsonResponse {
 instance ToJSON JsonResponse
 instance ToJSON Node
 instance ToJSON Link
-
+instance ToJSON PageInfo
 
 getBody :: String -> IO Stdout
-getBody url = cmd $ "curl --socks5-hostname localhost:9150 " <> url
+getBody url = catch (cmd $ "curl --socks5-hostname localhost:9150 " <> url) 
+                    (\e -> do 
+                        putStrLn ("Caught " ++ show (e :: SomeException))
+                        return $ Stdout ""
+                    )
 
 getHrefs :: String -> [String]
 getHrefs body = maybe [] id $ scrapeStringLike body (attrs "href" "a")
+
+getAllWords :: String -> String
+getAllWords body = maybe "" (L.intercalate ", ") $ scrapeStringLike body $ do 
+    p <- texts "p"
+    div <- texts "div"
+    let total = L.sort $ take 20 $ filter (\el -> L.all isAlpha el) $ L.nub $ 
+            filter (\el -> length el < 12 && length el > 5) $ 
+            concat $ fmap words $ p ++ div
+    return total 
+
+getTitle :: String -> String
+getTitle body = maybe "" id $ scrapeStringLike body $ text "title"
 
 parseUriWithParent :: String -> String -> Maybe String
 parseUriWithParent parent child = do 
@@ -102,10 +127,13 @@ parseUriWithParent parent child = do
         then return $ show $ relativeTo childUri parentUri 
         else return $ show childUri
 
-getPageDetails :: String -> IO [String]
+getPageDetails :: String -> IO (String, String, [String])
 getPageDetails url = do 
     Stdout out <- getBody url
-    return $ filter isOnionUrl $ mapMaybe (parseUriWithParent url) (getHrefs out)
+    let keywords = getAllWords out
+        links = filter isOnionUrl $ mapMaybe (parseUriWithParent url) (getHrefs out)
+        title = getTitle out
+    return $ (title, keywords, links)
 
 isOnionUrl :: String -> Bool
 isOnionUrl url = maybe False id $ do 
@@ -131,12 +159,6 @@ countOccurences = map (head &&& length) . L.group . sort
 getIndexWith :: [String] -> String -> Int
 getIndexWith list el = maybe 0 id $ L.findIndex (el ==) list
 
--- process :: [(String, String)] -> [(String, [String])]
--- process list = [(the a, b) |  let info = [ (x, y) | (x, y) <- list, then sortWith by y ], (a, b) <- info, then group by a using groupWith]
-
--- toJson :: [(String, String)] -> [(String,[String])]
--- toJson pairs = groupBy (\(a,b) (x,y) -> a == b) pairs
-
 rndInt :: IO Int
 rndInt = randomRIO (1, 6)
 
@@ -149,14 +171,17 @@ main = runStderrLoggingT $ withSqlitePool "data.db3" 10 $ \pool -> liftIO $ do
         when (optExport opts) $ do
             putStrLn "Exporting data.."
             scrapedPages <- flip runSqlPool pool $ selectList [ PageScraped ==. True ] []
+            pagesInfo <- flip runSqlPool pool $ selectList [] []
             let result = countOccurences $ mapMaybe pagesPairs scrapedPages
+                pagesInfoContent = unlines $ fmap (\(Entity _ (PageInfo url title keywords)) -> url <> "," <> title <> "," <> keywords) pagesInfo
                 exportContent = unlines $ fmap (\((from,to),count)-> from <> "," <> to <> "," <> (show count)) result
                 jsonExport = fmap (\((from,to),count)-> (from, to)) result
                 names = (L.nub (fmap fst jsonExport ++ fmap snd jsonExport))
                 nodes = fmap (\n -> Node n (unsafePerformIO rndInt)) names 
                 links = fmap (\(from,to) -> Link (getIndexWith names from) (getIndexWith names to) (unsafePerformIO rndInt)) jsonExport
-            encodeFile "graph/result.json" (JsonResponse nodes links)
+            BL.writeFile "graph/result.json" $ encodePretty (JsonResponse nodes links)
             writeFile "data.csv" exportContent
+            BL.writeFile "pageinfo.json" $ encodePretty (fmap entityVal pagesInfo)
 
 
         when (not (optExport opts)) $ do
@@ -175,7 +200,7 @@ main = runStderrLoggingT $ withSqlitePool "data.db3" 10 $ \pool -> liftIO $ do
                         flip runSqlPool pool $ update pageId [ PageScraped =. True ]
                         now <- getCurrentTime 
                         putStrLn pageTo
-                        hrefs <- getPageDetails pageTo
-                        -- flip runSqlPool pool $ update pageId [ PageScraped =. True ]
+                        (title, keywords,hrefs) <- getPageDetails pageTo
+                        flip runSqlPool pool $ insert $ PageInfo pageTo title keywords
                         forM_ hrefs $ \href -> do 
                             flip runSqlPool pool $ insertUnique $ Page pageTo href False now

@@ -42,8 +42,11 @@ Acceasta comanda va crea un fiser data.csv care contine pe fiecare linie trei va
 ```
 c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,23
 ```
+Este creat si fiserul pageinfo.json care contine pentru fiecare pagina in parte titlul si un set keywords care se regasesc in aceasta.
 
 Mai este creat si fiserul result.json care contine un obiect json cu doua campuri 'nodes' si 'links'. Campul 'nodes' reprezinta lista cu toate adresele onion care au fost gasite. Campul 'links' reprezinta lista cu toate relatiile dintre aceste adrese. Acest obiect json este folosit pentru a afisa diagrama care ne ajuta sa vizualizam relatiile. 
+
+Pentru afisarea diagramei am utlizat exemplul urmator: https://plnkr.co/edit/cVaILhLVwAumWr5QEvSW?p=preview&preview 
 
 Exemplu de diagrama afisata:
 ![Alt text](graph.png?raw=true "diagrama")
