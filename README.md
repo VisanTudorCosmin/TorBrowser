@@ -51,3 +51,7 @@ Va ma fi create si un fiser result.json care contine un obiect json cu doua camp
 
 Exemplu de diagrama afisata:
 ![Alt text](graph.png?raw=true "Title")
+
+Din cauza politici de siguranta CORS diagrama va fi afisata doar prin deschiderea fiserului index.html cu un server local. (Ex: brackets)
+
+Adresa unui nod va aparea prin aducerea mouse-ului deaspura lui.
