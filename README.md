@@ -43,6 +43,13 @@ Acceasta comanda va crea un fiser data.csv care contine pe fiecare linie trei va
 c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion,23
 ```
 Este creat si fiserul pageinfo.json care contine pentru fiecare pagina in parte titlul si un set keywords care se regasesc in aceasta.
+```
+{
+    "pageInfoAddr": "http://c32zjeghcp5tj3kb72pltz56piei66drc63vkhn5yixiyk4cmerrjtid.onion/f/AntiCopyright",
+    "pageInfoKeywords": "Submitted, January, December, August, emoticons, February, October, devender, drummyfish, November, FuckTheRIAA, September, CircleA, Public, Unlicense, License, Simplified, Apache, General, Affero",
+    "pageInfoTitle": "Anti-Capitalist, Anti-Copyright"
+}
+```
 
 Mai este creat si fiserul result.json care contine un obiect json cu doua campuri 'nodes' si 'links'. Campul 'nodes' reprezinta lista cu toate adresele onion care au fost gasite. Campul 'links' reprezinta lista cu toate relatiile dintre aceste adrese. Acest obiect json este folosit pentru a afisa diagrama care ne ajuta sa vizualizam relatiile. 
 
