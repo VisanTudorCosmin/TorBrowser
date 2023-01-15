@@ -46,6 +46,7 @@ import System.IO.Unsafe
 import System.Random
 import System.Random.Stateful
 import Control.Exception
+import System.Process (readProcessWithExitCode)
 
 import Control.Applicative
 import Options hiding (group)
@@ -98,11 +99,11 @@ instance ToJSON Link
 instance ToJSON PageInfo
 
 getBody :: String -> IO Stdout
-getBody url = catch (cmd $ "curl --socks5-hostname localhost:9150 " <> url) 
-                    (\e -> do 
-                        putStrLn ("Caught " ++ show (e :: SomeException))
-                        return $ Stdout ""
-                    )
+getBody url = do 
+    (exitcode, stdout, stderr) <- readProcessWithExitCode "curl" ["--socks5-hostname", "localhost:9150", url] ""
+    if (exitcode == ExitSuccess) 
+        then return $ Stdout stdout
+        else return $ Stdout ""
 
 getHrefs :: String -> [String]
 getHrefs body = maybe [] id $ scrapeStringLike body (attrs "href" "a")

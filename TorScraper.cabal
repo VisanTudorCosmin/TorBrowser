@@ -35,7 +35,8 @@ executable TorScraper
                        aeson ,
                        random ,
                        aeson-pretty ,
-                       bytestring
+                       bytestring ,
+                       process
   ghc-options:         -Wall
                        -Wcompat
                        -Widentities
